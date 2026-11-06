@@ -1,6 +1,6 @@
 {
   "name": "aurea-joyeria",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "private": true,
   "description": "Áurea — gestión de joyería con SQLite local o Turso en Vercel",
   "engines": {

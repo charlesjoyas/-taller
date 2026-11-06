@@ -1,6 +1,24 @@
 'use strict';
-const {workerData}=require('node:worker_threads');
-const {createClient}=workerData.allowFile?require('@libsql/client'):require('@libsql/client/http');
-const client=createClient({url:workerData.url,authToken:workerData.authToken,intMode:'number'});let transaction=null;
+const {workerData,parentPort}=require('node:worker_threads');
+const {createClient}=workerData.allowFile?require('./offline-sqlite.cjs'):require('@libsql/client/http');
 const clean=r=>({rows:(r.rows||[]).map(row=>Object.fromEntries((r.columns||Object.keys(row)).map(k=>[k,row[k]]))),changes:r.rowsAffected||0,lastInsertRowid:r.lastInsertRowid});
-workerData.port.on('message',async ({id,op,sql,args,statements,signal})=>{let response;try{let result;if(op==='exec'){const keyword=sql.trim().replace(/;$/,'').toUpperCase();if(/^BEGIN(?: IMMEDIATE)?$/.test(keyword)){if(transaction)throw Error('Nested transaction');transaction=await client.transaction(keyword.includes('IMMEDIATE')?'write':'read');}else if(keyword==='COMMIT'){if(!transaction)throw Error('No transaction');await transaction.commit();transaction=null;}else if(keyword==='ROLLBACK'){if(transaction)await transaction.rollback();transaction=null;}else await(transaction||client).executeMultiple(sql);result={};}else if(op==='batch')result=(await(transaction||client).batch(statements,'write')).map(clean);else if(op==='close'){if(transaction)await transaction.rollback();transaction=null;client.close();result={};}else{const r=clean(await(transaction||client).execute({sql,args:args||[]}));result=op==='get'?r.rows[0]:op==='all'?r.rows:r;}response={id,result};}catch(e){response={id,error:{code:String(e.code||'DATABASE_ERROR'),message:String(e.message||'Database error').replaceAll(workerData.authToken||'__NO_TOKEN__','[protected]').replaceAll(workerData.url,'[database]')}};}workerData.port.postMessage(response);Atomics.store(new Int32Array(signal),0,1);Atomics.notify(new Int32Array(signal),0);if(op==='close')workerData.port.close();});
+function attach({url,authToken,port}){
+ const client=createClient({url,authToken,intMode:'number'});let transaction=null;
+ port.on('message',async ({id,op,sql,args,statements,signal})=>{let response;try{
+  let result;
+  if(op==='ping')result=true;else if(op==='exec'){
+   const keyword=sql.trim().replace(/;$/,'').toUpperCase();
+   if(/^BEGIN(?: IMMEDIATE)?$/.test(keyword)){if(transaction)throw Error('Nested transaction');transaction=await client.transaction(keyword.includes('IMMEDIATE')?'write':'read');}
+   else if(keyword==='COMMIT'){if(!transaction)throw Error('No transaction');const active=transaction;try{await active.commit();}finally{transaction=null;}}
+   else if(keyword==='ROLLBACK'){const active=transaction;try{if(active)await active.rollback();}finally{transaction=null;}}
+   else await(transaction||client).executeMultiple(sql);
+   result={};
+  }else if(op==='batch')result=(await(transaction||client).batch(statements,'write')).map(clean);
+  else if(op==='close'){try{if(transaction)await transaction.rollback();}finally{transaction=null;client.close();}result={};}
+  else{const r=clean(await(transaction||client).execute({sql,args:args||[]}));result=op==='get'?r.rows[0]:op==='all'?r.rows:r;}
+  response={id,result};
+ }catch(e){response={id,error:{code:String(e.code||e.cause?.code||(/fetch failed|network|socket/i.test(e.message||'')?'NETWORK_ERROR':'DATABASE_ERROR')),message:String(e.message||'Database error').replaceAll(authToken||'__NO_TOKEN__','[protected]').replaceAll(url,'[database]')}};}
+ port.postMessage(response);Atomics.store(new Int32Array(signal),0,1);Atomics.notify(new Int32Array(signal),0);if(op==='close')port.close();
+ });
+}
+attach(workerData);

@@ -8,7 +8,7 @@ function passwordHash(password){if(typeof password!=='string'||password.length<1
 function verifyPassword(password,encoded){const [salt,hash]=encoded.split(':');const actual=scryptSync(String(password).slice(0,256),salt,64);return timingSafeEqual(actual,Buffer.from(hash,'hex'));}
 function cleanPermissions(input){const out={};for(const m of D.modules){const a=input?.[m]??input?.[D.permissionParents[m]]??[];if(!Array.isArray(a)||a.some(x=>!D.actions.includes(x)))D.fail('Permisos inválidos.');out[m]=a.length?[...new Set(['ver',...a])]:[];}return out;}
 function publicUser(row){if(!row)return null;return {id:row.id,name:row.name,email:row.email,role:row.role,active:!!row.active,customPermissions:!!row.custom,lastLogin:row.last_login||null,permissions:JSON.parse(row.permissions)};}
-function openDatabase(filename,{db:providedDb}={}){if(!providedDb)fs.mkdirSync(path.dirname(filename),{recursive:true});const db=providedDb||new DatabaseSync(filename);if(!providedDb)db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');db.exec(`
+function openDatabase(filename,{db:providedDb}={}){if(!providedDb)fs.mkdirSync(path.dirname(filename),{recursive:true});const db=providedDb||new DatabaseSync(filename);if(!providedDb)db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');db.exec('BEGIN IMMEDIATE');try{db.exec(`
 CREATE TABLE IF NOT EXISTS store(id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL, content TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT NOT NULL,email TEXT NOT NULL COLLATE NOCASE UNIQUE,hash TEXT NOT NULL,role TEXT NOT NULL,permissions TEXT NOT NULL,active INTEGER NOT NULL DEFAULT 1);
 CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),csrf TEXT NOT NULL,expires INTEGER NOT NULL);
@@ -18,7 +18,8 @@ if(!db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='last_login'))
 if(!db.prepare('PRAGMA table_info(users)').all().some(c=>c.name==='custom'))db.exec('ALTER TABLE users ADD COLUMN custom INTEGER NOT NULL DEFAULT 0');
 db.prepare('INSERT OR IGNORE INTO store VALUES(1,0,?)').run(JSON.stringify(D.initialState()));
 db.exec('CREATE TABLE IF NOT EXISTS migrations(name TEXT PRIMARY KEY)');
-if(!db.prepare('SELECT name FROM migrations WHERE name=?').get('superadmin-v1')){db.exec('BEGIN IMMEDIATE');try{const owner=db.prepare("SELECT id FROM users WHERE role='Administrador' AND active=1 ORDER BY rowid LIMIT 1").get();if(owner)db.prepare("UPDATE users SET role='Superadministrador' WHERE id=?").run(owner.id);db.prepare('INSERT INTO migrations VALUES(?)').run('superadmin-v1');db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}}
+if(!db.prepare('SELECT name FROM migrations WHERE name=?').get('superadmin-v1')){const owner=db.prepare("SELECT id FROM users WHERE role='Administrador' AND active=1 ORDER BY rowid LIMIT 1").get();if(owner)db.prepare("UPDATE users SET role='Superadministrador' WHERE id=?").run(owner.id);db.prepare('INSERT INTO migrations VALUES(?)').run('superadmin-v1');}
+db.exec('COMMIT');}catch(e){try{db.exec('ROLLBACK');}catch{}if(!providedDb)db.close();throw e;}
 const read=()=>{const r=db.prepare('SELECT * FROM store WHERE id=1').get();return {revision:r.revision,data:require('./parity.cjs').normalize(JSON.parse(r.content))};};
 const initialized=()=>db.prepare('SELECT COUNT(*) AS n FROM users').get().n>0;
 function atomic(fn){db.exec('BEGIN IMMEDIATE');try{const value=fn();db.exec('COMMIT');return value;}catch(e){db.exec('ROLLBACK');throw e;}}

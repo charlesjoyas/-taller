@@ -7,7 +7,7 @@
 1. Crear una base **vacía** en Turso y obtener su URL `libsql://…` y token de acceso. Elegir el dominio HTTPS definitivo de Vercel.
 2. En el equipo que contiene la base local ejecutar `pnpm cloud:prepare`. Se genera `.env.vercel.local`, ignorado por Git, con las claves originales de los archivos cifrados y nuevas claves de respaldo e instalación. Conservar una copia privada segura.
 3. Completar en ese archivo `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` y `AUREA_ORIGIN` (origen HTTPS sin ruta ni barra final). No enviar este archivo a GitHub ni pegar sus valores en el chat.
-4. Ejecutar `pnpm cloud:rehearse`. Este ensayo **no se conecta a Turso**: restaura una copia aislada mediante libSQL y compara tablas, datos, BLOB, secuencias y huellas. Los conteos comerciales y resultados quedan en `validacion/migracion-turso.json`.
+4. Ejecutar `pnpm cloud:rehearse`. Este ensayo **no se conecta a Turso**: restaura una copia aislada mediante SQLite en un worker y compara tablas, datos, BLOB, secuencias, metadatos y huellas; comprueba también las referencias. Los conteos comerciales y resultados quedan en `validacion/migracion-turso.json`.
 5. Detener todos los procesos que puedan escribir en la base local y cerrar la operación de la tienda durante el traslado. Hacer un respaldo con `pnpm backup` y conservar las claves asociadas.
 6. Transferir desde esa máquina:
 
@@ -60,7 +60,7 @@ El traslado incluye todas las tablas de la base seleccionada y su archivo cifrad
 
 Las solicitudes JSON de nube admiten 3 MB; el selector de importación deja margen con 2,8 MB. Las capturas grandes se preparan en la instalación local y se trasladan mediante el script. Las respuestas JSON grandes se envían por fragmentos. El estado comercial se conserva en un documento transaccional: no se convierte en una base distribuida sin límites; vigilar tamaño, latencia, concurrencia y cuotas de Turso/Vercel conforme crezca la operación.
 
-El adaptador conserva las operaciones síncronas del dominio mediante un worker y transacciones de libSQL. Las pruebas aisladas verifican integridad, idempotencia, sesiones entre instancias, rutas HTTP y recuperación. La latencia real y la disponibilidad solo se validan conectando la base alojada y desplegando en la cuenta real. Elegir regiones cercanas para función y base. No se requieren procesos permanentes ni temporizadores locales en Vercel.
+El adaptador conserva las operaciones síncronas del dominio mediante un worker y transacciones de libSQL. Las pruebas aisladas verifican integridad, idempotencia, sesiones entre instancias, rutas HTTP y recuperación. Un servidor Hrana de prueba comprueba también el SDK HTTP oficial, incluida la pérdida de una respuesta de confirmación. El ensayo de archivo utiliza SQLite de Node para evitar inestabilidad de los módulos nativos de terceros en Windows. La latencia real y la disponibilidad solo se validan conectando la base alojada y desplegando en la cuenta real. Elegir regiones cercanas para función y base. No se requieren procesos permanentes ni temporizadores locales en Vercel.
 
 El frontend y `/api/` deben usar el mismo origen. Las cookies son HttpOnly, SameSite y Secure en la nube; las escrituras exigen sesión, permisos, origen y CSRF. No configurar caché de las API. La importación antigua parcial está deshabilitada en nube: usar Configuración → Migración completa.
 
