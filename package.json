@@ -1,19 +1,25 @@
 {
   "name": "aurea-joyeria",
-  "version": "0.13.2",
+  "version": "0.14.0",
   "private": true,
-  "description": "Áurea — gestión de una joyería, con datos propios y operación local",
+  "description": "Áurea — gestión de joyería con SQLite local o Turso en Vercel",
   "engines": {
-    "node": ">=24.0.0"
+    "node": "24.x"
   },
   "scripts": {
     "start": "node server.cjs",
     "dev": "node server.cjs",
     "test": "node --test tests/*.test.cjs",
     "backup": "node scripts/backup.cjs",
-    "audit": "node scripts/audit-options.cjs"
+    "audit": "node scripts/audit-options.cjs",
+    "vercel-build": "node scripts/vercel-preflight.cjs",
+    "cloud:prepare": "node scripts/prepare-vercel.cjs",
+    "cloud:rehearse": "node scripts/migrate-turso.cjs",
+    "cloud:migrate": "node scripts/migrate-turso.cjs --apply",
+    "cloud:backup": "node scripts/cloud-backup.cjs create"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "mongodb": "^6.21.0"
   },
   "packageManager": "pnpm@11.25.0"

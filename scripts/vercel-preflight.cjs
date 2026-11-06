@@ -1,0 +1,4 @@
+'use strict';
+const fs=require('node:fs');
+const required=['TURSO_DATABASE_URL','TURSO_AUTH_TOKEN','AUREA_MIGRATION_KEY','AUREA_INTEGRATIONS_KEY','AUREA_BACKUP_KEY','AUREA_SETUP_TOKEN','CRON_SECRET','AUREA_ORIGIN'];
+const missing=required.filter(k=>!process.env[k]);if(process.env.VERCEL&&missing.length){console.error('Faltan variables protegidas: '+missing.join(', '));process.exit(1);}for(const name of ['AUREA_MIGRATION_KEY','AUREA_INTEGRATIONS_KEY','AUREA_BACKUP_KEY'])if(process.env[name]&&Buffer.from(process.env[name],'base64').length!==32)throw Error('Clave inválida: '+name);if(process.env.AUREA_ORIGIN&&!/^https:\/\/[^/]+$/.test(process.env.AUREA_ORIGIN))throw Error('AUREA_ORIGIN debe contener el origen HTTPS sin rutas.');if(!fs.existsSync('dist/index.html'))throw Error('Falta la interfaz de Áurea.');console.log('Verificación de archivos y configuración de despliegue completada.');

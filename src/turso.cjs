@@ -1,0 +1,14 @@
+'use strict';
+const {Worker,MessageChannel,receiveMessageOnPort}=require('node:worker_threads'),D=require('./domain.cjs');
+class TursoDatabase {
+ constructor({url=process.env.TURSO_DATABASE_URL,authToken=process.env.TURSO_AUTH_TOKEN,allowFile=false,timeout=20000,keys}={}){if(!url||!(/^(libsql|https):\/\//.test(url)||allowFile&&url.startsWith('file:')))D.fail('Configura TURSO_DATABASE_URL con la conexión protegida.',503);if(!allowFile&&!authToken)D.fail('Falta TURSO_AUTH_TOKEN.',503);const {port1,port2}=new MessageChannel();this.port=port1;this.timeout=timeout;this.sequence=0;this.isRemote=true;this.keys=keys||{};this.worker=new Worker(require.resolve('./turso-worker.cjs'),{workerData:{url,authToken,allowFile,port:port2},transferList:[port2]});this.worker.on('error',()=>{this.closed=true;this.port.close();});this.worker.unref();this.port.unref();this.closed=false;}
+ rpc(op,values={}){if(this.closed)D.fail('La conexión de datos necesita reiniciarse.',503);const id=++this.sequence,signal=new SharedArrayBuffer(4);this.port.postMessage({id,op,...values,signal});const status=Atomics.wait(new Int32Array(signal),0,0,this.timeout);if(status==='timed-out'){this.closed=true;this.worker.terminate();this.port.close();D.fail('La base tardó demasiado. Comprueba la operación antes de repetirla.',503);}const packet=receiveMessageOnPort(this.port)?.message;if(!packet||packet.id!==id){this.closed=true;this.worker.terminate();D.fail('La conexión de datos necesita reiniciarse.',503);}if(packet.error){if(/BUSY|LOCKED|STREAM_EXPIRED|HTTP_SERVER_ERROR|TIMEOUT/.test(packet.error.code))D.fail('La base está ocupada o necesita reconectarse. Revisa la operación antes de reintentar.',503);const e=Error(packet.error.message);e.code=packet.error.code;throw e;}return packet.result;}
+ prepare(sql){return {all:(...args)=>this.rpc('all',{sql,args}),get:(...args)=>this.rpc('get',{sql,args}),run:(...args)=>this.rpc('run',{sql,args})};}
+ exec(sql){return this.rpc('exec',{sql});}
+ batch(statements){return this.rpc('batch',{statements});}
+ secret(kind){const name={migration:'AUREA_MIGRATION_KEY',integrations:'AUREA_INTEGRATIONS_KEY',backup:'AUREA_BACKUP_KEY'}[kind],value=this.keys[kind]||process.env[name];if(!value)D.fail('Falta la clave protegida '+name+'.',503);const key=Buffer.isBuffer(value)?value:Buffer.from(value,'base64');if(key.length!==32)D.fail('Clave de cifrado inválida: '+name,503);return key;}
+ backup(reason){return require('./cloud-backups.cjs').create(this,reason);}
+ close(){if(!this.closed){const exited=new Promise(resolve=>this.worker.once('exit',resolve));try{this.rpc('close');}finally{this.closed=true;this.port.close();}return exited;}}
+}
+function openTursoDatabase(options){const db=new TursoDatabase(options);try{return require('./database.cjs').openDatabase('turso',{db});}catch(e){db.close();throw e;}}
+module.exports={TursoDatabase,openTursoDatabase};

@@ -15,7 +15,7 @@ Aplicación para administrar una joyería de una sola sede. Combina operación c
 
 ## Requisitos y arranque
 
-Node.js **24 o superior** y pnpm **11.25.0**. No es necesario compilar el frontend: los archivos estáticos están en `dist/`.
+Node.js **24.x** y pnpm **11.25.0**. No es necesario compilar el frontend: los archivos estáticos están en `dist/`.
 
 ```sh
 npm install --global pnpm@11.25.0
@@ -29,7 +29,7 @@ Las pruebas y demostraciones contienen únicamente datos ficticios. Sus credenci
 
 ## Datos y seguridad
 
-El servidor utiliza SQLite en `data/aurea.sqlite`, con transacciones, control de revisión y claves de idempotencia para operaciones. MongoDB se utiliza para importar el origen de Charles; no es necesario para operar una instalación vacía de Áurea.
+El servidor utiliza SQLite local en `data/aurea.sqlite` o Turso/libSQL en Vercel, con transacciones, control de revisión y claves de idempotencia para operaciones. MongoDB se utiliza para importar el origen de Charles; no es necesario para operar una instalación vacía de Áurea.
 
 **Este repositorio contiene el software, no los datos de ninguna joyería.** Bases, respaldos, claves, credenciales, exportaciones e informes internos están excluidos. La instalación existente debe conservar su carpeta de datos y sus claves al actualizar el código.
 
@@ -41,7 +41,7 @@ Los respaldos de datos y las claves locales de cifrado deben conservarse en ubic
 
 ## Configuración y despliegue
 
-Ver [DEPLOY.md](DEPLOY.md). Por defecto el servidor escucha en `127.0.0.1:4178`. El uso desde Internet requiere un servidor Node permanente, almacenamiento persistente y HTTPS mediante un proxy. El frontend necesita esta API: GitHub Pages no ejecuta el servidor.
+Ver [DEPLOY.md](DEPLOY.md). Por defecto el servidor escucha en `127.0.0.1:4178`. Vercel utiliza Turso como almacenamiento persistente y funciones Node; el traslado verificado conserva la base existente y sus claves. También se admite un servidor Node permanente con SQLite y HTTPS mediante proxy. El frontend necesita esta API: GitHub Pages no ejecuta el servidor.
 
 Las variables de entorno se configuran en el servicio de ejecución. Para una configuración local en archivo se puede copiar `.env.example` a `.env` y ejecutar:
 
@@ -57,7 +57,7 @@ No introducir claves en el navegador salvo en los formularios protegidos previst
 pnpm test
 ```
 
-Incluye regresiones de POS, permisos, pagos anulados, migración/BSON, integridad del archivo cifrado, saldos, costos desconocidos, CRM, exportaciones, paginación y HTTP. GitHub Actions ejecuta las pruebas al publicar cambios y abrir pull requests.
+Incluye pruebas del adaptador Turso, transferencia íntegra, respaldos cifrados, sesiones e idempotencia entre instancias, además de regresiones de POS, permisos, pagos anulados, migración/BSON, integridad del archivo cifrado, saldos, costos desconocidos, CRM, exportaciones, paginación y HTTP. GitHub Actions ejecuta las pruebas al publicar cambios y abrir pull requests.
 
 Diagnósticos de una instalación existente, en lectura:
 
