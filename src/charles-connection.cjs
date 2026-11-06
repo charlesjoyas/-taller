@@ -1,0 +1,7 @@
+'use strict';
+// Reads the existing Charles configuration without executing its server or exposing credentials.
+const fs=require('node:fs'),path=require('node:path'),D=require('./domain.cjs');
+function configured(root=process.env.AUREA_CHARLES_ROOT||path.resolve(__dirname,'../../Charlessjoyas-main/Charlessjoyas-main')){let uri='';const envFile=path.join(root,'.env');if(fs.existsSync(envFile)){const m=fs.readFileSync(envFile,'utf8').match(/^\s*MONGO_URI\s*=\s*(.*?)\s*$/m);if(m)uri=m[1].replace(/^(['"])(.*)\1$/,'$2');}if(!uri){const file=path.join(root,'server.js');if(fs.existsSync(file)){const m=fs.readFileSync(file,'utf8').match(/\b(?:const|let)\s+DIRECT_MONGO_URI\s*=\s*(['"])(.*?)\1/);if(m)uri=m[2];}}if(!/^mongodb(?:\+srv)?:\/\//.test(uri))return null;const match=uri.match(/^mongodb(?:\+srv)?:\/\/[^/]+\/([^?]+)/),database=match?decodeURIComponent(match[1]):'charlesjoyas_pos';if(!/^[\w-]{1,100}$/.test(database))return null;return {uri,database};}
+function status(root){try{const c=configured(root);return {available:!!c,database:c?.database||null};}catch{return {available:false,database:null};}}
+async function read({root,reader=require('./charles-source.cjs').readMongo}={}){let connection;try{connection=configured(root);}catch{D.fail('No se pudo leer la configuración local de Charles.',409);}if(!connection)D.fail('No hay una conexión Mongo válida en la configuración local. Usa el formulario de conexión.',409);try{return await reader(connection);}finally{connection.uri='';}}
+module.exports={status,read};

@@ -1,0 +1,4 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict'),{windowFor}=require('../dist/pagination.js');
+test('paginación: recorre 801 registros sin perder ni repetir ninguno',()=>{const data=Array.from({length:801},(_,i)=>i),visible=[];for(let page=1;page<=33;page++){const w=windowFor(data.length,page,25);visible.push(...data.slice(w.start,w.end));}assert.deepEqual(visible,data);assert.equal(windowFor(801,33,25).end,801);});
+test('paginación: filtrar o eliminar registros ajusta la página y los tamaños inválidos no desbordan',()=>{assert.deepEqual(windowFor(3,9,25),{total:3,page:1,size:25,pages:1,start:0,end:3});assert.equal(windowFor(0,100,10).page,1);assert.equal(windowFor(100,-5,0).size,25);assert.equal(windowFor(45,2,10).start,10);assert.equal(windowFor(45,2,50).page,1);assert.equal(windowFor(30,Infinity,10).page,3);});
