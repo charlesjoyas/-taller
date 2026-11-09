@@ -117,13 +117,13 @@ dialog{overflow-y:auto;overflow-x:hidden;max-height:90dvh;overscroll-behavior:co
 }
 
 .aurea-loading {
-  position: relative;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
   isolation: isolate;
   display: grid;
   place-items: center;
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow: hidden;
+  overflow: auto;
   padding: 40px 24px;
   background: radial-gradient(ellipse at 50% 40%, #235548 0%, #153f35 46%, #0d2d26 100%);
   color: #f6f5f1;
@@ -150,7 +150,14 @@ dialog{overflow-y:auto;overflow-x:hidden;max-height:90dvh;overscroll-behavior:co
   box-shadow: 0 0 0 34px #d7bd8509, 0 0 0 35px #d7bd8513;
   pointer-events: none;
 }
-.aurea-loading-content { width: min(100%, 28rem); }
+.aurea-loading-content {
+  width: min(100%, 28rem);
+  animation: aurea-loading-enter 360ms cubic-bezier(.2,.65,.3,1) both;
+}
+@keyframes aurea-loading-enter {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .aurea-loading-emblem {
   display: grid;
   place-items: center;
@@ -188,19 +195,20 @@ dialog{overflow-y:auto;overflow-x:hidden;max-height:90dvh;overscroll-behavior:co
   border-radius: 2px;
   background: #d7bd8540;
 }
-.aurea-loading-track::before {
-  content: "";
+.aurea-loading-fill {
   display: block;
-  width: 48%;
+  width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: #e0c18a;
-  animation: aurea-loading-sweep 1.6s ease-in-out infinite alternate;
+  background: linear-gradient(90deg, #b49a69, #f2d49a);
+  transform-origin: left;
+  animation: aurea-loading-progress 1.7s cubic-bezier(.16,.7,.3,1) both;
 }
-@keyframes aurea-loading-sweep {
-  from { transform: translateX(-20%); }
-  to { transform: translateX(128%); }
+@keyframes aurea-loading-progress {
+  from { transform: scaleX(.06); }
+  to { transform: scaleX(.8); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .aurea-loading-track::before { animation: none; transform: translateX(54%); }
+  .aurea-loading-content, .aurea-loading-fill { animation: none; }
+  .aurea-loading-fill { transform: scaleX(.8); }
 }

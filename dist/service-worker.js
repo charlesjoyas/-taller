@@ -1,5 +1,5 @@
 'use strict';
-const CACHE='aurea-shell-v28';
+const CACHE='aurea-shell-v29';
 const SHELL=['/','/index.html','/styles.css','/icons.js','/app.js','/parity.js','/offline.js','/executive.js','/audit.js','/workflow-policy.js','/workflows.js','/pos-profit-policy.js','/pos-profit.js','/crm.js','/crm-commerce.js','/crm-followups.js','/crm-campaigns.js','/crm-communications.js','/charles-full.js','/pagination.js'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('aurea-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});

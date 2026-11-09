@@ -200,5 +200,49 @@ document.addEventListener('change',e=>{const t=e.target;if(t.name==='cart-custom
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!sidebarDesktop.matches)toggleSidebar(false);if(e.key==='Enter'&&e.target.id==='pos-search'){e.preventDefault();const p=data().products.find(p=>[p.sku,p.barcode||''].some(code=>code.toLowerCase()===e.target.value.trim().toLowerCase()));if(p)document.querySelector(`[data-add="${p.id}"]`)?.click();}});
 window.addEventListener('hashchange',()=>{const r=location.hash.slice(1);if(r==='main')return document.querySelector('#main')?.focus();appState.route=labels[r]?r:'inicio';appState.tab='';appState.query='';render();window.scrollTo(0,0);document.querySelector('#main')?.focus({preventScroll:true});});
 async function downloadExport(module,format){const payload=await api(`/api/export?module=${module}&start=${appState.start}&end=${appState.end}`);const rows=[payload.headers,...payload.rows];let content,type,extension;const safe=v=>typeof v==='string'&&/^[=+\-@\t\r]/.test(v)?"'"+v:v;if(format==='xls'){const xml=v=>String(safe(v)).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]));content='<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Aurea"><Table>'+rows.map(row=>'<Row>'+row.map(v=>'<Cell><Data ss:Type="'+(typeof v==='number'?'Number':'String')+'">'+xml(v)+'</Data></Cell>').join('')+'</Row>').join('')+'</Table></Worksheet></Workbook>';type='application/vnd.ms-excel';extension='xls';}else{content='\ufeff'+rows.map(r=>r.map(v=>'"'+String(safe(v)).replace(/"/g,'""')+'"').join(';')).join('\r\n');type='text/csv;charset=utf-8';extension='csv';}const url=URL.createObjectURL(new Blob([content],{type})),a=document.createElement('a');a.href=url;a.download='Aurea-'+module+'-'+appState.today+'.'+extension;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);toast('Exportación generada con los datos registrados.');}
-async function boot(){try{const r=await api('/api/session');appState.cloud=!!r.cloud;appState.maxJsonBytes=r.maxJsonBytes;appState.initialized=r.initialized;appState.user=r.user;appState.csrf=r.csrf;if(r.user){await load();const route=location.hash.slice(1);appState.route=labels[route]?route:allowed('inicio')?'inicio':'pos';render();}else authView();}catch(e){if(extraUI.offline?.(e))return;document.querySelector('#app').innerHTML=`<main class="empty"><h1>No pudimos conectar con Áurea.</h1><p>${esc(e.message)}</p><p>Comprueba tu conexión y vuelve a cargar la página. Si el problema continúa, solicita al administrador revisar el servidor.</p></main>`;}}
+async function finishStartup(startedAt){
+  const splash=document.querySelector('.aurea-loading');
+  const app=document.querySelector('#app');
+  try{
+    if(!splash||matchMedia('(prefers-reduced-motion: reduce)').matches||!splash.animate)return;
+    const remaining=500-(performance.now()-startedAt);
+    if(remaining>0)await new Promise(resolve=>setTimeout(resolve,remaining));
+    const fill=splash.querySelector('.aurea-loading-fill');
+    if(fill){
+      const current=getComputedStyle(fill).transform;
+      await fill.animate([{transform:current},{transform:'scaleX(1)'}],{
+        duration:170,easing:'ease-out',fill:'forwards'
+      }).finished;
+    }
+    splash.setAttribute('aria-hidden','true');
+    await splash.animate([{opacity:1},{opacity:0}],{
+      duration:280,easing:'ease-in-out',fill:'forwards'
+    }).finished;
+  }finally{
+    splash?.remove();
+    app.inert=false;
+  }
+}
+async function boot(){
+  const startedAt=performance.now();
+  try{
+    const session=await api('/api/session');
+    appState.cloud=!!session.cloud;
+    appState.maxJsonBytes=session.maxJsonBytes;
+    appState.initialized=session.initialized;
+    appState.user=session.user;
+    appState.csrf=session.csrf;
+    if(session.user){
+      await load();
+      const route=location.hash.slice(1);
+      appState.route=labels[route]?route:allowed('inicio')?'inicio':'pos';
+      render();
+    }else authView();
+  }catch(error){
+    if(await extraUI.offline?.(error))return;
+    document.querySelector('#app').innerHTML=`<main class="empty"><h1>No pudimos conectar con Áurea.</h1><p>${esc(error.message)}</p><p>Comprueba tu conexión y vuelve a cargar la página. Si el problema continúa, solicita al administrador revisar el servidor.</p></main>`;
+  }finally{
+    await finishStartup(startedAt);
+  }
+}
 if(document.readyState!=='complete')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();

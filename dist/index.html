@@ -9,20 +9,19 @@
 </head>
 <body>
   <a class="skip" href="#main">Saltar al contenido</a>
-  <div id="app">
-    <main id="main" class="aurea-loading" tabindex="-1">
-      <div class="aurea-loading-content">
-        <div class="aurea-loading-emblem" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-            <path d="m3 8 4-5h10l4 5-9 13z M3 8h18 M7 3l5 18 5-18"></path>
-          </svg>
-        </div>
-        <h1 class="aurea-loading-wordmark">áurea</h1>
-        <p class="aurea-loading-tagline">Gestión que brilla</p>
-        <p class="aurea-loading-status" role="status">Preparando tu espacio de trabajo…</p>
-        <span class="aurea-loading-track" aria-hidden="true"></span>
+  <div id="app" inert></div>
+  <div class="aurea-loading">
+    <div class="aurea-loading-content">
+      <div class="aurea-loading-emblem" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+          <path d="m3 8 4-5h10l4 5-9 13z M3 8h18 M7 3l5 18 5-18"></path>
+        </svg>
       </div>
-    </main>
+      <h1 class="aurea-loading-wordmark">áurea</h1>
+      <p class="aurea-loading-tagline">Gestión que brilla</p>
+      <p class="aurea-loading-status" role="status">Preparando tu espacio de trabajo…</p>
+      <span class="aurea-loading-track" aria-hidden="true"><span class="aurea-loading-fill"></span></span>
+    </div>
   </div>
   <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
