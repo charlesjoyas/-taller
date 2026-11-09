@@ -115,3 +115,92 @@ dialog{overflow-y:auto;overflow-x:hidden;max-height:90dvh;overscroll-behavior:co
     scrollbar-color:var(--brand) var(--subtle);
   }
 }
+
+.aurea-loading {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding: 40px 24px;
+  background: radial-gradient(ellipse at 50% 40%, #235548 0%, #153f35 46%, #0d2d26 100%);
+  color: #f6f5f1;
+  text-align: center;
+}
+.aurea-loading::before {
+  content: "";
+  position: absolute;
+  inset: clamp(12px, 3vw, 38px);
+  z-index: -1;
+  border: 1px solid #d7bd852e;
+  pointer-events: none;
+}
+.aurea-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: -1;
+  width: clamp(230px, 48vmin, 540px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 1px solid #d7bd851f;
+  box-shadow: 0 0 0 34px #d7bd8509, 0 0 0 35px #d7bd8513;
+  pointer-events: none;
+}
+.aurea-loading-content { width: min(100%, 28rem); }
+.aurea-loading-emblem {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 22px;
+  border: 1px solid #d7bd8599;
+  border-radius: 13px;
+  transform: rotate(45deg);
+  color: #e0c18a;
+  background: #153f35;
+  box-shadow: 0 0 30px #e0c18a1f;
+}
+.aurea-loading-emblem svg { width: 44px; height: 44px; transform: rotate(-45deg); }
+.aurea-loading-wordmark {
+  margin: 0;
+  font: 400 clamp(52px, 9vw, 86px)/.97 Georgia, serif;
+  letter-spacing: -.045em;
+}
+.aurea-loading-tagline {
+  margin-top: 12px;
+  color: #e0c18a;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+.aurea-loading-status { margin-top: 34px; color: #e2ebe5; font-size: 13px; }
+.aurea-loading-track {
+  display: block;
+  width: 128px;
+  height: 2px;
+  margin: 14px auto 0;
+  overflow: hidden;
+  border-radius: 2px;
+  background: #d7bd8540;
+}
+.aurea-loading-track::before {
+  content: "";
+  display: block;
+  width: 48%;
+  height: 100%;
+  border-radius: inherit;
+  background: #e0c18a;
+  animation: aurea-loading-sweep 1.6s ease-in-out infinite alternate;
+}
+@keyframes aurea-loading-sweep {
+  from { transform: translateX(-20%); }
+  to { transform: translateX(128%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurea-loading-track::before { animation: none; transform: translateX(54%); }
+}
