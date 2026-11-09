@@ -57,3 +57,18 @@ test('sustituir pruebas: cambiar destino o revisión exige recalcular antes de r
 test('cierre real: orden inverso y diferencia documentada conservan último conteo físico sin inventar ajustes',t=>{const f=fixture(t),raw=source();raw.cashShiftLog.status='Cerrado';raw.store.cashInBox=140;raw.cashShiftsHistory=[{id:'late',shiftId:'active',date:'2026-10-04',openedDate:'2026-10-04',closedAt:'06:08 p.m.',openingCash:100,closingCash:150,expectedCashInDrawer:140,difference:10},{id:'early',shiftId:'older',date:'2026-10-04',openedDate:'2026-10-04',closedAt:'10:08 a.m.',openingCash:10,closingCash:70,expectedCashInDrawer:70,difference:0}];const p=f.plan(raw);assert.deepEqual(p.errors,[]);assert.equal(p.state.shifts.at(-1).legacyId,'active');assert.equal(p.totals.cash,150);assert.equal(D.report(p.state).cash,150);assert.ok(p.issues.some(i=>i.code==='cash-close-difference'));assert.equal(p.state.movements.some(m=>m.id==='CH-CASH-CHECKPOINT'),false);const r=require('../src/migration-rehearsal.cjs').rehearse(p);assert.equal(r.passed,true);assert.ok(r.checks.some(c=>c.name==='Apertura de un turno exclusivamente de ensayo'));raw.store.cashInBox=999;assert.ok(f.plan(raw).issues.some(i=>i.code==='cash-balance'&&i.severity==='error'));});
 
 test('reimportación autorizada: otra captura conserva usuarios importados existentes y sus credenciales',t=>{const f=fixture(t),first=f.plan();f.commit(first);const before=f.app.store.db.prepare('SELECT id,hash,role,active,permissions FROM users ORDER BY id').all(),raw=source();raw.updatedAt='2026-11-06T12:00:00Z';const next=f.app.fullMigration.prepare(f.owner,raw,{},'replace'),r=f.app.fullMigration.commit(f.owner,raw,{},f.app.store.read().revision,next.planDigest,'replace');assert.ok(r.id);assert.deepEqual(f.app.store.db.prepare('SELECT id,hash,role,active,permissions FROM users ORDER BY id').all(),before);assert.equal(f.app.store.db.prepare('SELECT COUNT(*) n FROM charles_full_imports').get().n,2);});
+
+test('turnos de Charles: conserva la base bancaria antigua sin alterar el saldo global ni crear movimientos',t=>{
+ const f=fixture(t),raw=source(),known={openingAccount:'Banco QA',openingCard:300,accountBreakdown:{}};
+ Object.assign(raw.cashShiftLog,known);
+ raw.cashShiftsHistory.push({id:'historico-banco',shiftId:'historico-banco',openingCash:0,closingCash:20,expectedCashInDrawer:20,cashSales:30,cashExpenses:10,date:'2026-09-30',...known,openingCard:50});
+ const p=f.plan(raw,{accounts:{'Banco QA':500}});
+ assert.deepEqual(p.errors,[]);
+ const bank=p.state.accounts.find(a=>a.name==='Banco QA'),active=p.state.shifts.find(s=>!s.closedAt),closed=p.state.shifts.find(s=>s.legacyId==='historico-banco');
+ assert.equal(active.bankOpening[bank.id],300);
+ assert.equal(closed.bankOpening[bank.id],50);
+ const report=require('../src/analytics.cjs').build(p.state,'turno',{shiftId:closed.id});
+ assert.deepEqual(report.shiftCash,{cashSales:30,cashExpenses:10,expected:20,reconstructed:0,incomplete:true});
+ assert.equal(D.bankBalance(p.state,bank.id),500);
+ assert.equal(p.state.movements.some(m=>m.accountId===bank.id),false);
+});
