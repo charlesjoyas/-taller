@@ -8,7 +8,10 @@ async function main(){
  try{if(apply&&!process.argv.includes('--local-stopped'))throw Error('Detén el servidor local y añade --local-stopped.');source=new DatabaseSync(sourceFile,{readOnly:true});
   if(apply){
    target=new TursoDatabase();for(const kind of ['migration','integrations','backup'])target.secret(kind);
-   require('../src/cloud-config.cjs').validate(process.env);require('../src/cloud-config.cjs').sourceKeys(source,sourceFile,kind=>target.secret(kind));
+   // The target and encryption keys are required above. Vercel settings are needed at deployment.
+   const cloudConfig=require('../src/cloud-config.cjs');
+   cloudConfig.validate(process.env,{requireAll:false});
+   cloudConfig.sourceKeys(source,sourceFile,kind=>target.secret(kind));
    fs.writeFileSync(marker,JSON.stringify({status:'transferring',at:new Date().toISOString()})+'\n',{flag:'wx',mode:0o600});ownsMarker=true;
   }else{temp=fs.mkdtempSync(path.join(os.tmpdir(),'aurea-turso-rehearsal-'));target=new TursoDatabase({url:'file:'+path.join(temp,'target.sqlite'),allowFile:true});}
   const capture=T.snapshot(source),restored=T.restore(target,capture),current=T.snapshot(source);

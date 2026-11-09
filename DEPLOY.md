@@ -4,9 +4,9 @@
 
 ## Trasladar una instalación existente
 
-1. Crear una base **vacía** en Turso y obtener su URL `libsql://…` y token de acceso. Elegir el dominio HTTPS definitivo de Vercel.
+1. Crear una base **vacía** en Turso y obtener su URL `libsql://…` y token de acceso.
 2. En el equipo que contiene la base local ejecutar `pnpm cloud:prepare`. Se genera `.env.vercel.local`, ignorado por Git, con las claves originales de los archivos cifrados y nuevas claves de respaldo e instalación. Conservar una copia privada segura.
-3. Completar en ese archivo `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` y `AUREA_ORIGIN` (origen HTTPS sin ruta ni barra final). No enviar este archivo a GitHub ni pegar sus valores en el chat.
+3. Completar en ese archivo `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`. Definir `AUREA_ORIGIN` (origen HTTPS sin ruta ni barra final) cuando se conozca el dominio definitivo, antes de desplegar. No enviar este archivo a GitHub ni pegar sus valores en el chat.
 4. Ejecutar `pnpm cloud:rehearse`. Este ensayo **no se conecta a Turso**: restaura una copia aislada mediante SQLite en un worker y compara tablas, datos, BLOB, secuencias, metadatos y huellas; comprueba también las referencias. Los conteos comerciales y resultados quedan en `validacion/migracion-turso.json`.
 5. Detener todos los procesos que puedan escribir en la base local y cerrar la operación de la tienda durante el traslado. Hacer un respaldo con `pnpm backup` y conservar las claves asociadas.
 6. Transferir desde esa máquina:

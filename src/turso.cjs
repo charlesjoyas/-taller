@@ -8,7 +8,7 @@ class TursoDatabase {
  batch(statements){return this.rpc('batch',{statements});}
  secret(kind){const name={migration:'AUREA_MIGRATION_KEY',integrations:'AUREA_INTEGRATIONS_KEY',backup:'AUREA_BACKUP_KEY'}[kind],value=this.keys[kind]||process.env[name];if(!value)D.fail('Falta la clave protegida '+name+'.',503);return require('./cloud-config.cjs').secretKey(value,name);}
  backup(reason){return require('./cloud-backups.cjs').create(this,reason);}
- close(){if(!this.closed){const exited=new Promise(resolve=>this.worker.once('exit',resolve));try{this.rpc('close');}finally{this.closed=true;this.port.close();this.worker.removeListener('error',this.onWorkerError);}return exited;}}
+ close(){if(!this.closed){this.worker.ref();const exited=new Promise(resolve=>this.worker.once('exit',resolve));try{this.rpc('close');}finally{this.closed=true;this.port.close();this.worker.removeListener('error',this.onWorkerError);}return exited;}}
 }
 function openTursoDatabase(options){const db=new TursoDatabase(options);try{return require('./database.cjs').openDatabase('turso',{db});}catch(e){db.close();throw e;}}
 module.exports={TursoDatabase,openTursoDatabase};
