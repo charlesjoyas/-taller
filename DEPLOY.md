@@ -28,7 +28,7 @@ No reabrir la antigua base local después de comenzar a operar en Turso. Una vue
 |---|---|
 | `TURSO_DATABASE_URL` | URL de la base de producción |
 | `TURSO_AUTH_TOKEN` | Token privado con acceso a esa base |
-| `AUREA_ORIGIN` | Origen HTTPS final de la aplicación |
+| `AUREA_ORIGIN` | Origen HTTPS final sin barra final. En Production se puede omitir si Vercel expone `VERCEL_PROJECT_PRODUCTION_URL`. |
 | `AUREA_MIGRATION_KEY` | Clave original de `charles-migration.key`, codificada en base64 |
 | `AUREA_INTEGRATIONS_KEY` | Clave original de `crm-integrations.key`, codificada en base64 |
 | `AUREA_BACKUP_KEY` | Clave de 32 bytes en base64 para respaldos de nube |
