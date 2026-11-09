@@ -105,3 +105,13 @@ dialog{overflow-y:auto;overflow-x:hidden;max-height:90dvh;overscroll-behavior:co
 @media print{.list-pagination{display:none!important}.page-hidden{display:revert!important}.table-wrap{overflow:visible!important}.table-wrap table{min-width:0!important}dialog .modal-head{position:static}}
 .page-heading .actions{flex-wrap:wrap;gap:8px}.page-heading .actions .btn{max-width:100%;white-space:normal}
 @media(max-width:400px){.topbar{padding:0 8px;gap:4px}.topbar>.sidebar-toggle{flex-shrink:0;width:36px;min-width:36px}.top-actions{gap:0;justify-content:flex-end}.top-actions>.icon-btn{width:32px;min-width:32px;padding:0}.top-actions>.user{width:38px;min-width:38px;gap:0}.top-actions>.user>svg{display:none}.top-actions .avatar{width:30px;height:30px}.top-actions>.turn{font-size:9px;padding:5px;gap:4px;min-width:0;max-width:80px}}
+
+@media screen and (min-width:768px){
+  .pos-layout > .cart{
+    max-height:calc(100dvh - 40px);
+    overflow-y:auto;
+    overscroll-behavior-y:contain;
+    scrollbar-width:thin;
+    scrollbar-color:var(--brand) var(--subtle);
+  }
+}
